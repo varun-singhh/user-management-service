@@ -1,0 +1,404 @@
+openapi: 3.0.0
+info:
+  title: User Service API
+  description: API documentation for the User Service
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local server
+
+paths:
+  /doctor/{doctorId}:
+    get:
+      summary: Get Doctor
+      description: Retrieve a specific doctor by ID
+      parameters:
+        - in: path
+          name: doctorId
+          required: true
+          schema:
+            type: string
+          description: ID of the doctor to retrieve
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+
+  /doctor:
+    post:
+      summary: Create Doctor
+      description: Create a new doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorInput'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+
+    put:
+      summary: Update Doctor
+      description: Update an existing doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorInput'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+
+    delete:
+      summary: Delete Doctor
+      description: Delete an existing doctor
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the doctor to delete
+      responses:
+        '200':
+          description: Successful response
+
+  /patient/{patientId}:
+    get:
+      summary: Get Patient
+      description: Retrieve a specific patient by ID
+      parameters:
+        - in: path
+          name: patientId
+          required: true
+          schema:
+            type: string
+          description: ID of the patient to retrieve
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+
+  /patient:
+    post:
+      summary: Create Patient
+      description: Create a new patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientInput'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+
+    put:
+      summary: Update Patient
+      description: Update an existing patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientInput'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+
+    delete:
+      summary: Delete Patient
+      description: Delete an existing patient
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the patient to delete
+      responses:
+        '200':
+          description: Successful response
+
+components:
+  schemas:
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the doctor
+        doctor_details:
+          $ref: '#/components/schemas/DoctorPersonalDetails'
+        doctor_contact:
+          $ref: '#/components/schemas/DoctorContact'
+        department:
+          type: string
+          description: Department of the doctor
+        designation:
+          type: string
+          description: Designation of the doctor
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the doctor was created
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date and time when the doctor was deleted
+        follow_ups:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoctorFollowUp'
+        case_recordings:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoctorCaseRecording'
+        patients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+
+    DoctorInput:
+      type: object
+      properties:
+        doctor_details:
+          $ref: '#/components/schemas/DoctorPersonalDetails'
+        doctor_contact:
+          $ref: '#/components/schemas/DoctorContact'
+        department:
+          type: string
+          description: Department of the doctor
+        designation:
+          type: string
+          description: Designation of the doctor
+
+    DoctorFollowUp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the follow-up
+        doctor_id:
+          type: string
+          description: ID of the doctor associated with the follow-up
+        date:
+          type: string
+          format: date
+          description: Date of the follow-up
+        time:
+          type: string
+          description: Time of the follow-up
+        followup_count:
+          type: string
+          description: Follow-up count
+        patient:
+          $ref: '#/components/schemas/Patient'
+
+    DoctorCaseRecording:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the case recording
+        doctor_id:
+          type: string
+          description: ID of the doctor associated with the case recording
+        patient:
+          $ref: '#/components/schemas/Patient'
+    Patient:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the patient
+        patient_details:
+          $ref: '#/components/schemas/PatientPersonalDetails'
+        patient_contact:
+          $ref: '#/components/schemas/PatientContact'
+        address:
+          $ref: '#/components/schemas/Address'
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time when the patient was created
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date and time when the patient was deleted
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time when the patient was last updated
+        follow_ups:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUp'
+        case_recordings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PCaseRecording'
+        doctors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Doctor'
+
+    PatientInput:
+      type: object
+      properties:
+        patient_details:
+          $ref: '#/components/schemas/PatientPersonalDetails'
+        patient_contact:
+          $ref: '#/components/schemas/PatientContact'
+        address:
+          $ref: '#/components/schemas/Address'
+
+    DoctorPersonalDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the doctor
+        dob:
+          type: string
+          format: date
+          description: Date of birth of the doctor
+        age:
+          type: string
+          description: Age of the doctor
+        city:
+          type: string
+          description: City of the doctor
+        state:
+          type: string
+          description: State of the doctor
+        district:
+          type: string
+          description: District of the doctor
+        pincode:
+          type: string
+          description: Pincode of the doctor
+        gender:
+          type: string
+          description: Gender of the doctor
+        license_number:
+          type: string
+          description: License number of the doctor
+
+    DoctorContact:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the doctor
+        phone:
+          type: string
+          description: Phone number of the doctor
+
+    FollowUp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the follow-up
+        date:
+          type: string
+          format: date
+          description: Date of the follow-up
+        time:
+          type: string
+          description: Time of the follow-up
+        follow_up_count:
+          type: string
+          description: Follow-up count
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+
+    PCaseRecording:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the case recording
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+
+    PatientPersonalDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the patient
+        dob:
+          type: string
+          format: date
+          description: Date of birth of the patient
+        age:
+          type: string
+          description: Age of the patient
+        gender:
+          type: string
+          description: Gender of the patient
+        aadhar_number:
+          type: string
+          description: Aadhar number of the patient
+        relation:
+          type: string
+          description: Relation of the patient
+
+    PatientContact:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the patient
+        phone:
+          type: string
+          description: Phone number of the patient
+
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+          description: City of the address
+        district:
+          type: string
+          description: District of the address
+        state:
+          type: string
+          description: State of the address
+        block:
+          type: string
+          description: Block of the address
+        pincode:
+          type: string
+          description: Pincode of the address
