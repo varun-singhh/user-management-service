@@ -18,12 +18,12 @@ func New() *storeHandler {
 
 func (a *storeHandler) Get(ctx *gofr.Context, doctorReq *models.Doctor) (*models.Doctor, error) {
 	var doctor models.Doctor
-	query := `SELECT id, email, phone, department, designation, name, dob, age, city, district, pincode,license_number, created_at, updated_at, deleted_at FROM doctors WHERE `
+	query := `SELECT id, email, phone, department, designation, name, dob, age, city, district, pincode,license_number, created_at, updated_at, deleted_at FROM doctors `
 
 	// Append the WHERE clause for other conditions
 	whereClause, params := getWhereClause(doctorReq)
 	if whereClause != "" {
-		query += whereClause
+		query += " WHERE " + whereClause
 	}
 
 	doctor.DoctorContact = &models.DoctorContact{}

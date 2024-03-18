@@ -83,6 +83,24 @@ func (h *handler) Create(ctx *gofr.Context) (interface{}, error) {
 	return resp, nil
 }
 
+func (h *handler) InternalCreate(ctx *gofr.Context) (interface{}, error) {
+	var doctor models.Doctor
+
+	doctor.ID = ctx.PathParam("id")
+
+	err := ctx.Bind(&doctor)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.service.InternalCreate(ctx, &doctor)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (h *handler) Update(ctx *gofr.Context) (interface{}, error) {
 	var doctor models.Doctor
 

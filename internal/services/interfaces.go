@@ -9,6 +9,7 @@ type Doctor interface {
 	Get(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
 	GetAll(ctx *gofr.Context, filter *models.DoctorFilter, pageFilter *models.Page) (interface{}, error)
 	Create(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
+	InternalCreate(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
 	Update(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
 	Delete(ctx *gofr.Context, id string) error
 	GetFollowUp(ctx *gofr.Context, doctorID string) (interface{}, error)
