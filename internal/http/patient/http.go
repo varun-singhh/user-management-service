@@ -32,6 +32,39 @@ func (h *handler) Get(ctx *gofr.Context) (interface{}, error) {
 	return resp, nil
 }
 
+func (h *handler) GetAll(ctx *gofr.Context) (interface{}, error) {
+	var (
+		patient models.PatientFilter
+		page    models.Page
+	)
+
+	params := ctx.Request().URL.Query()
+
+	if params.Get("limit") != "" {
+		page.Limit = params.Get("limit")
+	} else {
+		page.Limit = "20"
+	}
+
+	if params.Get("offset") != "" {
+		page.Offset = params.Get("offset")
+	} else {
+		page.Offset = "0"
+	}
+
+	err := ctx.Bind(&patient)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.service.GetAll(ctx, &patient, &page)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (h *handler) Create(ctx *gofr.Context) (interface{}, error) {
 	var patient models.Patient
 

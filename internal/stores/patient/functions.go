@@ -281,3 +281,32 @@ func getUpdateSetClause(patient *models.Patient) (string, []interface{}) {
 	setClause := strings.Join(setValues, ", ")
 	return setClause, params
 }
+
+func getFilterParams(filter *models.PatientFilter) (query string, params []interface{}) {
+	if filter.Name != "" {
+		query += "name LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Name+"%")
+	}
+	if filter.AadharNumber != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "aadhar_number LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.AadharNumber+"%")
+	}
+	if filter.Email != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "email LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Email+"%")
+	}
+	if filter.Phone != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "phone LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Phone+"%")
+	}
+	return query, params
+}

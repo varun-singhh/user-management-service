@@ -7,6 +7,7 @@ import (
 
 type Doctor interface {
 	Get(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
+	GetAll(ctx *gofr.Context, filter *models.DoctorFilter, pageFilter *models.Page) (interface{}, error)
 	Create(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
 	Update(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error)
 	Delete(ctx *gofr.Context, id string) error
@@ -15,6 +16,7 @@ type Doctor interface {
 
 type Patient interface {
 	Get(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
+	GetAll(ctx *gofr.Context, filter *models.PatientFilter, pageFilter *models.Page) (interface{}, error)
 	Create(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	Update(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	Delete(ctx *gofr.Context, id string) error

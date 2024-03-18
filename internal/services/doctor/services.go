@@ -7,6 +7,7 @@ import (
 	errors2 "gofr.dev/pkg/errors"
 	"gofr.dev/pkg/gofr"
 	"net/http"
+	"strconv"
 )
 
 type serviceHandler struct {
@@ -24,6 +25,20 @@ func (h *serviceHandler) Get(ctx *gofr.Context, doctor *models.Doctor) (interfac
 	}
 
 	return resp, nil
+}
+
+func (h *serviceHandler) GetAll(ctx *gofr.Context, filter *models.DoctorFilter, pageFilter *models.Page) (interface{}, error) {
+	resp, err := h.store.GetAll(ctx, filter, pageFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	return models.AllDataResponse{
+		Count:  strconv.Itoa(len(resp)),
+		Offset: pageFilter.Offset,
+		Limit:  pageFilter.Limit,
+		Data:   resp,
+	}, nil
 }
 
 func (h *serviceHandler) Create(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error) {

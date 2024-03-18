@@ -80,6 +80,36 @@
 						"header": []
 					},
 					"response": []
+				},
+				{
+					"name": "GetAll",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\":\"Varun\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/doctors",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"doctors"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -187,6 +217,36 @@
 							"path": [
 								"patient",
 								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAll",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\":\"Json\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/patients",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"patients"
 							]
 						}
 					},

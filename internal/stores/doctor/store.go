@@ -63,6 +63,64 @@ func (a *storeHandler) Get(ctx *gofr.Context, doctorReq *models.Doctor) (*models
 	return &doctor, nil
 }
 
+func (a *storeHandler) GetAll(ctx *gofr.Context, doctorFilter *models.DoctorFilter, pageFilter *models.Page) ([]*models.Doctor, error) {
+	var doctors []*models.Doctor
+	query := `SELECT id, email, phone, department, designation, name, dob, age, city, district, pincode, license_number, created_at, updated_at, deleted_at FROM doctors `
+
+	// Append the WHERE clause for other conditions
+	whereClause, params := getFilterParams(doctorFilter)
+	if whereClause != "" {
+		query += "WHERE " + whereClause
+	}
+
+	query += " LIMIT " + pageFilter.Limit
+
+	query += " OFFSET " + pageFilter.Offset
+
+	rows, err := ctx.DB().Query(query, params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var doctor models.Doctor
+		doctor.DoctorContact = &models.DoctorContact{}
+		doctor.DoctorDetails = &models.DoctorPersonalDetails{}
+
+		err = rows.Scan(
+			&doctor.ID,
+			&doctor.DoctorContact.Email,
+			&doctor.DoctorContact.Phone,
+			&doctor.Department,
+			&doctor.Designation,
+			&doctor.DoctorDetails.Name,
+			&doctor.DoctorDetails.DOB,
+			&doctor.DoctorDetails.Age,
+			&doctor.DoctorDetails.City,
+			&doctor.DoctorDetails.District,
+			&doctor.DoctorDetails.Pincode,
+			&doctor.DoctorDetails.LicenseNumber,
+			&doctor.CreatedAt,
+			&doctor.UpdatedAt,
+			&doctor.DeletedAt,
+		)
+		if err != nil {
+			ctx.Logger.Error("error while scanning doctor details:", err)
+			return nil, &errors.DB{Err: err}
+		}
+
+		doctors = append(doctors, &doctor)
+	}
+
+	if err = rows.Err(); err != nil {
+		ctx.Logger.Error("error while iterating over doctor rows:", err)
+		return nil, &errors.DB{Err: err}
+	}
+
+	return doctors, nil
+}
+
 func (a *storeHandler) Create(ctx *gofr.Context, doctor *models.Doctor) (*models.Doctor, error) {
 	columns, placeholders, params := getInsertColumnsAndPlaceholders(doctor)
 	query := "INSERT INTO doctors " + columns + " VALUES " + placeholders + " RETURNING id"

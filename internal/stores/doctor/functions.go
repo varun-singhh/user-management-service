@@ -306,3 +306,32 @@ func getUpdateSetClause(doctor *models.Doctor) (string, []interface{}) {
 	setClause := strings.Join(setValues, ", ")
 	return setClause, params
 }
+
+func getFilterParams(filter *models.DoctorFilter) (query string, params []interface{}) {
+	if filter.Name != "" {
+		query += "name LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Name+"%")
+	}
+	if filter.LicenseNumber != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "license_number LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.LicenseNumber+"%")
+	}
+	if filter.Email != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "email LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Email+"%")
+	}
+	if filter.Phone != "" {
+		if query != "" {
+			query += " AND "
+		}
+		query += "phone LIKE $" + strconv.Itoa(len(params)+1)
+		params = append(params, "%"+filter.Phone+"%")
+	}
+	return query, params
+}

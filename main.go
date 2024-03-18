@@ -25,12 +25,14 @@ func main() {
 	ph := patientHandler.New(pSvc)
 
 	app.GET("/doctor/{id}", dh.Get)
+	app.GET("/doctors", dh.GetAll)
 	app.POST("/doctor/{id}", dh.Create)
 	app.PUT("/doctor/{id}", dh.Update)
 	app.DELETE("/doctor/{id}", dh.Delete)
 	app.GET("/doctor/followup/{id}", dh.GetFollowUp)
 
 	app.GET("/patient/{id}", ph.Get)
+	app.GET("/patients", ph.GetAll)
 	app.POST("/patient/{id}", ph.Create)
 	app.PUT("/patient/{id}", ph.Update)
 	app.DELETE("/patient/{id}", ph.Delete)
