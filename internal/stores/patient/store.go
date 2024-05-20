@@ -18,7 +18,7 @@ func New() *storeHandler {
 
 func (a *storeHandler) Get(ctx *gofr.Context, patientReq *models.Patient) (*models.Patient, error) {
 	var patient models.Patient
-	query := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,city, district, pincode, created_at, updated_at, deleted_at FROM patients `
+	query := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,block, district, pincode, created_at, updated_at, deleted_at FROM patients `
 
 	// Append the WHERE clause for other conditions
 	whereClause, params := getWhereClause(patientReq)
@@ -41,7 +41,7 @@ func (a *storeHandler) Get(ctx *gofr.Context, patientReq *models.Patient) (*mode
 		&patient.PatientDetails.Gender,
 		&patient.PatientDetails.Relation,
 		&patient.PatientDetails.AadharNumber,
-		&patient.Address.City,
+		&patient.Address.Block,
 		&patient.Address.District,
 		&patient.Address.Pincode,
 		&patient.CreatedAt,
@@ -66,7 +66,7 @@ func (a *storeHandler) Get(ctx *gofr.Context, patientReq *models.Patient) (*mode
 
 func (a *storeHandler) GetAll(ctx *gofr.Context, doctorFilter *models.PatientFilter, pageFilter *models.Page) ([]*models.Patient, error) {
 	var patients []*models.Patient
-	query := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,city, district, pincode, created_at, updated_at, deleted_at FROM patients `
+	query := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,block, district, pincode, created_at, updated_at, deleted_at FROM patients `
 
 	// Append the WHERE clause for other conditions
 	whereClause, params := getFilterParams(doctorFilter)
@@ -101,7 +101,7 @@ func (a *storeHandler) GetAll(ctx *gofr.Context, doctorFilter *models.PatientFil
 			&patient.PatientDetails.Gender,
 			&patient.PatientDetails.Relation,
 			&patient.PatientDetails.AadharNumber,
-			&patient.Address.City,
+			&patient.Address.Block,
 			&patient.Address.District,
 			&patient.Address.Pincode,
 			&patient.CreatedAt,

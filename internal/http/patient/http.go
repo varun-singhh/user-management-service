@@ -19,10 +19,11 @@ func (h *handler) Get(ctx *gofr.Context) (interface{}, error) {
 
 	patient.ID = ctx.PathParam("id")
 
-	err := ctx.Bind(&patient)
-	if err != nil {
-		return nil, err
-	}
+	params := ctx.Request().URL.Query()
+
+	patient.PatientDetails.Name = params.Get("name")
+	patient.PatientDetails.AadharNumber = params.Get("aadhar_number")
+	patient.PatientContact.Phone = params.Get("phone")
 
 	resp, err := h.service.Get(ctx, &patient)
 	if err != nil {
@@ -52,10 +53,9 @@ func (h *handler) GetAll(ctx *gofr.Context) (interface{}, error) {
 		page.Offset = "0"
 	}
 
-	err := ctx.Bind(&patient)
-	if err != nil {
-		return nil, err
-	}
+	patient.Name = params.Get("name")
+	patient.AadharNumber = params.Get("aadhar_number")
+	patient.Phone = params.Get("phone")
 
 	resp, err := h.service.GetAll(ctx, &patient, &page)
 	if err != nil {
@@ -76,6 +76,22 @@ func (h *handler) Create(ctx *gofr.Context) (interface{}, error) {
 	}
 
 	resp, err := h.service.Create(ctx, &patient)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (h *handler) InternalCreate(ctx *gofr.Context) (interface{}, error) {
+	var patient models.Patient
+
+	err := ctx.Bind(&patient)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.service.InternalCreate(ctx, &patient)
 	if err != nil {
 		return nil, err
 	}

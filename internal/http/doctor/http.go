@@ -17,12 +17,13 @@ func New(svc services.Doctor) *handler {
 func (h *handler) Get(ctx *gofr.Context) (interface{}, error) {
 	var doctor models.Doctor
 
+	params := ctx.Request().URL.Query()
+
 	doctor.ID = ctx.PathParam("id")
 
-	err := ctx.Bind(&doctor)
-	if err != nil {
-		return nil, err
-	}
+	doctor.DoctorDetails.Name = params.Get("name")
+	doctor.DoctorDetails.LicenseNumber = params.Get("license_number")
+	doctor.DoctorContact.Phone = params.Get("phone")
 
 	resp, err := h.service.Get(ctx, &doctor)
 	if err != nil {
@@ -52,10 +53,9 @@ func (h *handler) GetAll(ctx *gofr.Context) (interface{}, error) {
 		page.Offset = "0"
 	}
 
-	err := ctx.Bind(&doctor)
-	if err != nil {
-		return nil, err
-	}
+	doctor.Name = params.Get("name")
+	doctor.LicenseNumber = params.Get("license_number")
+	doctor.Phone = params.Get("phone")
 
 	resp, err := h.service.GetAll(ctx, &doctor, &page)
 	if err != nil {
@@ -85,8 +85,6 @@ func (h *handler) Create(ctx *gofr.Context) (interface{}, error) {
 
 func (h *handler) InternalCreate(ctx *gofr.Context) (interface{}, error) {
 	var doctor models.Doctor
-
-	doctor.ID = ctx.PathParam("id")
 
 	err := ctx.Bind(&doctor)
 	if err != nil {

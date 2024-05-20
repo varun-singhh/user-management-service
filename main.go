@@ -35,6 +35,7 @@ func main() {
 	app.GET("/patient/{id}", ph.Get)
 	app.GET("/patients", ph.GetAll)
 	app.POST("/patient/{id}", ph.Create)
+	app.POST("/internal/patient", ph.InternalCreate)
 	app.PUT("/patient/{id}", ph.Update)
 	app.DELETE("/patient/{id}", ph.Delete)
 	app.GET("/patient/followup/{id}", ph.GetFollowUp)

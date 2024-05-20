@@ -292,9 +292,9 @@ components:
         age:
           type: string
           description: Age of the doctor
-        city:
+        Block:
           type: string
-          description: City of the doctor
+          description: Block of the doctor
         state:
           type: string
           description: State of the doctor
@@ -387,9 +387,9 @@ components:
     Address:
       type: object
       properties:
-        city:
+        Block:
           type: string
-          description: City of the address
+          description: Block of the address
         district:
           type: string
           description: District of the address

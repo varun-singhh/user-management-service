@@ -30,7 +30,6 @@ type PatientContact struct {
 }
 
 type Address struct {
-	City     string `json:"city"`
 	District string `json:"district"`
 	State    string `json:"state"`
 	Block    string `json:"block,omitempty"`

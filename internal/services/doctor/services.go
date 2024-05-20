@@ -48,6 +48,11 @@ func (h *serviceHandler) GetAll(ctx *gofr.Context, filter *models.DoctorFilter, 
 func (h *serviceHandler) InternalCreate(ctx *gofr.Context, doctor *models.Doctor) (interface{}, error) {
 	var entityNotFound *errors2.EntityNotFound
 
+	missingParams := validateCreateRequest(doctor)
+	if len(missingParams) > 0 {
+		return nil, errors2.MissingParam{Param: missingParams}
+	}
+
 	// Prepare the request body
 	reg := models.Register{
 		Phone:      doctor.DoctorContact.Phone,
@@ -62,7 +67,7 @@ func (h *serviceHandler) InternalCreate(ctx *gofr.Context, doctor *models.Doctor
 	}
 
 	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://localhost:2222/api/signup", bytes.NewBuffer(reqBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ctx.Config.Get("AUTHENTICATION_API_ENDPOINT"), bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("error while creating request for auth-service: %w", err)
 	}

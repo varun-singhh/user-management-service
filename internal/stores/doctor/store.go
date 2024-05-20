@@ -18,7 +18,7 @@ func New() *storeHandler {
 
 func (a *storeHandler) Get(ctx *gofr.Context, doctorReq *models.Doctor) (*models.Doctor, error) {
 	var doctor models.Doctor
-	query := `SELECT id, email, phone, department, designation, name, dob, age, city, district, pincode,license_number, created_at, updated_at, deleted_at FROM doctors `
+	query := `SELECT id, email, phone, department, designation, name, dob, age, block, district, pincode,license_number, created_at, updated_at, deleted_at FROM doctors `
 
 	// Append the WHERE clause for other conditions
 	whereClause, params := getWhereClause(doctorReq)
@@ -39,7 +39,7 @@ func (a *storeHandler) Get(ctx *gofr.Context, doctorReq *models.Doctor) (*models
 		&doctor.DoctorDetails.Name,
 		&doctor.DoctorDetails.DOB,
 		&doctor.DoctorDetails.Age,
-		&doctor.DoctorDetails.City,
+		&doctor.DoctorDetails.Block,
 		&doctor.DoctorDetails.District,
 		&doctor.DoctorDetails.Pincode,
 		&doctor.DoctorDetails.LicenseNumber,
@@ -65,7 +65,7 @@ func (a *storeHandler) Get(ctx *gofr.Context, doctorReq *models.Doctor) (*models
 
 func (a *storeHandler) GetAll(ctx *gofr.Context, doctorFilter *models.DoctorFilter, pageFilter *models.Page) ([]*models.Doctor, error) {
 	var doctors []*models.Doctor
-	query := `SELECT id, email, phone, department, designation, name, dob, age, city, district, pincode, license_number, created_at, updated_at, deleted_at FROM doctors `
+	query := `SELECT id, email, phone, department, designation, name, dob, age, block, district, pincode, license_number, created_at, updated_at, deleted_at FROM doctors `
 
 	// Append the WHERE clause for other conditions
 	whereClause, params := getFilterParams(doctorFilter)
@@ -97,7 +97,7 @@ func (a *storeHandler) GetAll(ctx *gofr.Context, doctorFilter *models.DoctorFilt
 			&doctor.DoctorDetails.Name,
 			&doctor.DoctorDetails.DOB,
 			&doctor.DoctorDetails.Age,
-			&doctor.DoctorDetails.City,
+			&doctor.DoctorDetails.Block,
 			&doctor.DoctorDetails.District,
 			&doctor.DoctorDetails.Pincode,
 			&doctor.DoctorDetails.LicenseNumber,

@@ -20,7 +20,7 @@ type DoctorPersonalDetails struct {
 	Name          string `json:"name"`
 	DOB           string `json:"DOB"`
 	Age           string `json:"age"`
-	City          string `json:"city"`
+	Block         string `json:"block"`
 	State         string `json:"state"`
 	District      string `json:"district"`
 	Pincode       string `json:"pincode"`

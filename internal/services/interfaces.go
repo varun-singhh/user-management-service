@@ -18,6 +18,7 @@ type Doctor interface {
 type Patient interface {
 	Get(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	GetAll(ctx *gofr.Context, filter *models.PatientFilter, pageFilter *models.Page) (interface{}, error)
+	InternalCreate(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	Create(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	Update(ctx *gofr.Context, patient *models.Patient) (interface{}, error)
 	Delete(ctx *gofr.Context, id string) error

@@ -43,12 +43,12 @@ func getWhereClause(doctor *models.Doctor) (string, []interface{}) {
 		i++
 	}
 
-	if doctor.DoctorDetails != nil && doctor.DoctorDetails.City != "" {
+	if doctor.DoctorDetails != nil && doctor.DoctorDetails.Block != "" {
 		if query != "" {
 			query += " AND "
 		}
-		query += "city=$" + strconv.Itoa(i+1)
-		params = append(params, doctor.DoctorDetails.City)
+		query += "block=$" + strconv.Itoa(i+1)
+		params = append(params, doctor.DoctorDetails.Block)
 		i++
 	}
 
@@ -168,10 +168,10 @@ func getInsertColumnsAndPlaceholders(doctor *models.Doctor) (string, string, []i
 			placeholders = append(placeholders, "$"+strconv.Itoa(len(placeholders)+1))
 			params = append(params, doctor.DoctorDetails.Age)
 		}
-		if doctor.DoctorDetails.City != "" {
-			columns = append(columns, "city")
+		if doctor.DoctorDetails.Block != "" {
+			columns = append(columns, "block")
 			placeholders = append(placeholders, "$"+strconv.Itoa(len(placeholders)+1))
-			params = append(params, doctor.DoctorDetails.City)
+			params = append(params, doctor.DoctorDetails.Block)
 		}
 		if doctor.DoctorDetails.State != "" {
 			columns = append(columns, "state")
@@ -253,9 +253,9 @@ func getUpdateSetClause(doctor *models.Doctor) (string, []interface{}) {
 			setValues = append(setValues, "age=$"+strconv.Itoa(len(params)+1))
 			params = append(params, doctor.DoctorDetails.Age)
 		}
-		if doctor.DoctorDetails.City != "" {
-			setValues = append(setValues, "city=$"+strconv.Itoa(len(params)+1))
-			params = append(params, doctor.DoctorDetails.City)
+		if doctor.DoctorDetails.Block != "" {
+			setValues = append(setValues, "block=$"+strconv.Itoa(len(params)+1))
+			params = append(params, doctor.DoctorDetails.Block)
 		}
 		if doctor.DoctorDetails.State != "" {
 			setValues = append(setValues, "state=$"+strconv.Itoa(len(params)+1))
