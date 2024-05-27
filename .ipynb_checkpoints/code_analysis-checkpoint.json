@@ -1,0 +1,925 @@
+{
+  "main.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/main.go": {
+      "imports": [
+        "\"gofr.dev/pkg/gofr\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/http/doctor\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/services/doctor\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/stores/doctor\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/http/patient\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/services/patient\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/stores/patient\""
+      ],
+      "functions": [
+        {
+          "name": "main",
+          "parameters": null,
+          "returnType": "",
+          "body": "{\n\tapp := gofr.New()\n\n\tds := doctorStore.New()\n\tps := patientStore.New()\n\n\tdSvc := doctorSvc.New(ds)\n\tpSvc := patientSvc.New(ps)\n\n\tdh := doctorHandler.New(dSvc)\n\tph := patientHandler.New(pSvc)\n\n\tapp.GET(\"/doctor/{id}\", dh.Get)\n\tapp.GET(\"/doctors\", dh.GetAll)\n\tapp.POST(\"/doctor/{id}\", dh.Create)\n\tapp.POST(\"/internal/doctor\", dh.InternalCreate)\n\tapp.PUT(\"/doctor/{id}\", dh.Update)\n\tapp.DELETE(\"/doctor/{id}\", dh.Delete)\n\tapp.GET(\"/doctor/followup/{id}\", dh.GetFollowUp)\n\n\tapp.GET(\"/patient/{id}\", ph.Get)\n\tapp.GET(\"/patients\", ph.GetAll)\n\tapp.POST(\"/patient/{id}\", ph.Create)\n\tapp.POST(\"/internal/patient\", ph.InternalCreate)\n\tapp.PUT(\"/patient/{id}\", ph.Update)\n\tapp.DELETE(\"/patient/{id}\", ph.Delete)\n\tapp.GET(\"/patient/followup/{id}\", ph.GetFollowUp)\n\n\tapp.Start()\n}"
+        }
+      ]
+    }
+  },
+  "internal/stores/interfaces.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/stores/interfaces.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"gofr.dev/pkg/gofr\""
+      ],
+      "functions": null
+    }
+  },
+  "internal/stores/doctor/store.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/stores/doctor/store.go": {
+      "imports": [
+        "\"database/sql\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"gofr.dev/pkg/errors\"",
+        "\"gofr.dev/pkg/gofr\"",
+        "\"strconv\"",
+        "\"time\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": null,
+          "returnType": "&{%!s(token.Pos=224) storeHandler}",
+          "body": "{\n\treturn &storeHandler{}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=298) %!s(*ast.SelectorExpr=&{0x140000b62c0 0x140000b62e0})}"
+            },
+            {
+              "name": "doctorReq",
+              "type": "&{%!s(token.Pos=323) %!s(*ast.SelectorExpr=&{0x140000b6320 0x140000b6340})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=340) %!s(*ast.SelectorExpr=&{0x140000b6360 0x140000b6380})}",
+          "body": "{\n\tvar doctor models.Doctor\n\tquery := `SELECT id, email, phone, department, designation, name, dob, age, block, district, pincode,license_number, created_at, updated_at, deleted_at FROM doctors `\n\n\t// Append the WHERE clause for other conditions\n\twhereClause, params := getWhereClause(doctorReq)\n\tif whereClause != \"\" {\n\t\tquery += \" WHERE \" + whereClause\n\t}\n\n\tdoctor.DoctorContact = &models.DoctorContact{}\n\tdoctor.DoctorDetails = &models.DoctorPersonalDetails{}\n\n\trow := ctx.DB().QueryRow(query, params...)\n\terr := row.Scan(\n\t\t&doctor.ID,\n\t\t&doctor.DoctorContact.Email,\n\t\t&doctor.DoctorContact.Phone,\n\t\t&doctor.Department,\n\t\t&doctor.Designation,\n\t\t&doctor.DoctorDetails.Name,\n\t\t&doctor.DoctorDetails.DOB,\n\t\t&doctor.DoctorDetails.Age,\n\t\t&doctor.DoctorDetails.Block,\n\t\t&doctor.DoctorDetails.District,\n\t\t&doctor.DoctorDetails.Pincode,\n\t\t&doctor.DoctorDetails.LicenseNumber,\n\t\t&doctor.CreatedAt,\n\t\t&doctor.UpdatedAt,\n\t\t&doctor.DeletedAt,\n\t)\n\n\tif err == sql.ErrNoRows || doctor.DeletedAt != nil {\n\t\treturn nil, &errors.EntityNotFound{\n\t\t\tEntity: \"doctor\",\n\t\t\tID:     doctorReq.ID,\n\t\t}\n\t}\n\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while fetching doctor details from db:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn &doctor, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1634) %!s(*ast.SelectorExpr=&{0x140000b74c0 0x140000b74e0})}"
+            },
+            {
+              "name": "doctorFilter",
+              "type": "&{%!s(token.Pos=1662) %!s(*ast.SelectorExpr=&{0x140000b7520 0x140000b7540})}"
+            },
+            {
+              "name": "pageFilter",
+              "type": "&{%!s(token.Pos=1695) %!s(*ast.SelectorExpr=&{0x140000b7580 0x140000b75a0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1710) <nil> %!s(*ast.StarExpr=&{1712 0x140000b45e8})}",
+          "body": "{\n\tvar doctors []*models.Doctor\n\tquery := `SELECT id, email, phone, department, designation, name, dob, age, block, district, pincode, license_number, created_at, updated_at, deleted_at FROM doctors `\n\n\t// Append the WHERE clause for other conditions\n\twhereClause, params := getFilterParams(doctorFilter)\n\tif whereClause != \"\" {\n\t\tquery += \"WHERE \" + whereClause\n\t}\n\n\tquery += \" LIMIT \" + pageFilter.Limit\n\n\tquery += \" OFFSET \" + pageFilter.Offset\n\n\trows, err := ctx.DB().Query(query, params...)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tfor rows.Next() {\n\t\tvar doctor models.Doctor\n\t\tdoctor.DoctorContact = &models.DoctorContact{}\n\t\tdoctor.DoctorDetails = &models.DoctorPersonalDetails{}\n\n\t\terr = rows.Scan(\n\t\t\t&doctor.ID,\n\t\t\t&doctor.DoctorContact.Email,\n\t\t\t&doctor.DoctorContact.Phone,\n\t\t\t&doctor.Department,\n\t\t\t&doctor.Designation,\n\t\t\t&doctor.DoctorDetails.Name,\n\t\t\t&doctor.DoctorDetails.DOB,\n\t\t\t&doctor.DoctorDetails.Age,\n\t\t\t&doctor.DoctorDetails.Block,\n\t\t\t&doctor.DoctorDetails.District,\n\t\t\t&doctor.DoctorDetails.Pincode,\n\t\t\t&doctor.DoctorDetails.LicenseNumber,\n\t\t\t&doctor.CreatedAt,\n\t\t\t&doctor.UpdatedAt,\n\t\t\t&doctor.DeletedAt,\n\t\t)\n\t\tif err != nil {\n\t\t\tctx.Logger.Error(\"error while scanning doctor details:\", err)\n\t\t\treturn nil, &errors.DB{Err: err}\n\t\t}\n\n\t\tdoctors = append(doctors, &doctor)\n\t}\n\n\tif err = rows.Err(); err != nil {\n\t\tctx.Logger.Error(\"error while iterating over doctor rows:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn doctors, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=3254) %!s(*ast.SelectorExpr=&{0x140000e2ba0 0x140000e2bc0})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=3276) %!s(*ast.SelectorExpr=&{0x140000e2c00 0x140000e2c20})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=3293) %!s(*ast.SelectorExpr=&{0x140000e2c40 0x140000e2c60})}",
+          "body": "{\n\tcolumns, placeholders, params := getInsertColumnsAndPlaceholders(doctor)\n\tquery := \"INSERT INTO doctors \" + columns + \" VALUES \" + placeholders + \" RETURNING id\"\n\n\tvar id string\n\terr := ctx.DB().QueryRow(query, params...).Scan(&id)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while creating doctor in the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\tdoctor.ID = id\n\treturn doctor, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=3751) %!s(*ast.SelectorExpr=&{0x140000e3360 0x140000e3380})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=3773) %!s(*ast.SelectorExpr=&{0x140000e33c0 0x140000e33e0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=3790) %!s(*ast.SelectorExpr=&{0x140000e3400 0x140000e3420})}",
+          "body": "{\n\tsetClause, params := getUpdateSetClause(doctor)\n\tquery := \"UPDATE doctors SET \" + setClause + \" WHERE id = $\" + strconv.Itoa(len(params)+1)\n\tparams = append(params, doctor.ID)\n\n\t_, err := ctx.DB().Exec(query, params...)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while updating doctor in the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\treturn doctor, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4220) %!s(*ast.SelectorExpr=&{0x140000e3b60 0x140000e3b80})}"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "returnType": "error",
+          "body": "{\n\tquery := `UPDATE doctors SET deleted_at=$1 WHERE id=$2`\n\t_, err := ctx.DB().Exec(query, time.Now(), id)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while deleting doctor from the database:\", err)\n\t\treturn &errors.DB{Err: err}\n\t}\n\treturn nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4537) %!s(*ast.SelectorExpr=&{0x140000e8100 0x140000e8120})}"
+            },
+            {
+              "name": "doctorID",
+              "type": "string"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4570) <nil> %!s(*ast.StarExpr=&{4572 0x140000b4f48})}",
+          "body": "{\n\tquery := ` SELECT id, date, time, followup_count FROM doctor_followups  WHERE doctor_id=$1`\n\trows, err := ctx.DB().Query(query, doctorID)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while fetching follow-ups from the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\tdefer rows.Close()\n\n\tfollowUps := []*models.FollowUp{}\n\tfor rows.Next() {\n\t\tvar followUp models.FollowUp\n\t\terr := rows.Scan(&followUp.ID, &followUp.Date, &followUp.Time, &followUp.FollowUpCount)\n\t\tif err != nil {\n\t\t\tctx.Logger.Error(\"error while scanning follow-up row:\", err)\n\t\t\treturn nil, &errors.DB{Err: err}\n\t\t}\n\t\tfollowUps = append(followUps, &followUp)\n\t}\n\n\tif err := rows.Err(); err != nil {\n\t\tctx.Logger.Error(\"error while iterating follow-up rows:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn followUps, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/stores/doctor/functions.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/stores/doctor/functions.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"strconv\"",
+        "\"strings\"",
+        "\"time\""
+      ],
+      "functions": [
+        {
+          "name": "getWhereClause",
+          "parameters": [
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=161) %!s(*ast.SelectorExpr=&{0x14000010180 0x140000101a0})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tquery  string\n\t\tparams []interface{}\n\t\ti      int\n\t)\n\n\ti = 0\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.Name != \"\" {\n\t\tif i > 0 {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"name=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.Name)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.DOB != \"\" {\n\t\tif i > 0 {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"dob=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.DOB)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.Age != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"age=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.Age)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.Block != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"block=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.Block)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.State != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"state=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.State)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.District != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"district=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.District)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.Pincode != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"pincode=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.Pincode)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.Gender != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"gender=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.Gender)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorDetails.LicenseNumber != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"license_number=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorDetails.LicenseNumber)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorContact.Email != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"email=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorContact.Email)\n\t\ti++\n\t}\n\n\tif doctor.DoctorDetails != nil && doctor.DoctorContact.Phone != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"phone=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.DoctorContact.Phone)\n\t\ti++\n\t}\n\n\tif doctor.Department != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"department=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.Department)\n\t\ti++\n\t}\n\n\tif doctor.Designation != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"designation=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.Designation)\n\t\ti++\n\t}\n\n\tif doctor.ID != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"id=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, doctor.ID)\n\t\ti++\n\t}\n\n\treturn strings.Trim(query, \" AND \"), params\n}"
+        },
+        {
+          "name": "getInsertColumnsAndPlaceholders",
+          "parameters": [
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=3281) %!s(*ast.SelectorExpr=&{0x1400012f260 0x1400012f280})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tcolumns      []string\n\t\tplaceholders []string\n\t\tparams       []interface{}\n\t)\n\n\tif doctor.DoctorDetails != nil {\n\t\tif doctor.DoctorDetails.Name != \"\" {\n\t\t\tcolumns = append(columns, \"name\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Name)\n\t\t}\n\t\tif doctor.DoctorDetails.DOB != \"\" {\n\t\t\tcolumns = append(columns, \"dob\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.DOB)\n\t\t}\n\t\tif doctor.DoctorDetails.Age != \"\" {\n\t\t\tcolumns = append(columns, \"age\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Age)\n\t\t}\n\t\tif doctor.DoctorDetails.Block != \"\" {\n\t\t\tcolumns = append(columns, \"block\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Block)\n\t\t}\n\t\tif doctor.DoctorDetails.State != \"\" {\n\t\t\tcolumns = append(columns, \"state\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.State)\n\t\t}\n\t\tif doctor.DoctorDetails.District != \"\" {\n\t\t\tcolumns = append(columns, \"district\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.District)\n\t\t}\n\t\tif doctor.DoctorDetails.Pincode != \"\" {\n\t\t\tcolumns = append(columns, \"pincode\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Pincode)\n\t\t}\n\t\tif doctor.DoctorDetails.Gender != \"\" {\n\t\t\tcolumns = append(columns, \"gender\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Gender)\n\t\t}\n\t\tif doctor.DoctorDetails.LicenseNumber != \"\" {\n\t\t\tcolumns = append(columns, \"license_number\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.LicenseNumber)\n\t\t}\n\t}\n\n\tif doctor.DoctorContact != nil {\n\t\tif doctor.DoctorContact.Email != \"\" {\n\t\t\tcolumns = append(columns, \"email\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorContact.Email)\n\t\t}\n\t\tif doctor.DoctorContact.Phone != \"\" {\n\t\t\tcolumns = append(columns, \"phone\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, doctor.DoctorContact.Phone)\n\t\t}\n\t}\n\n\tif doctor.ID != \"\" {\n\t\tcolumns = append(columns, \"id\")\n\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\tparams = append(params, doctor.ID)\n\t}\n\n\tif doctor.Department != \"\" {\n\t\tcolumns = append(columns, \"department\")\n\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\tparams = append(params, doctor.Department)\n\t}\n\n\tif doctor.Designation != \"\" {\n\t\tcolumns = append(columns, \"designation\")\n\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\tparams = append(params, doctor.Designation)\n\t}\n\n\treturn \"(\" + strings.Join(columns, \", \") + \")\", \"(\" + strings.Join(placeholders, \", \") + \")\", params\n}"
+        },
+        {
+          "name": "getUpdateSetClause",
+          "parameters": [
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=6597) %!s(*ast.SelectorExpr=&{0x1400013c6e0 0x1400013c700})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tsetValues []string\n\t\tparams    []interface{}\n\t)\n\n\tif doctor.DoctorDetails != nil {\n\t\tif doctor.DoctorDetails.Name != \"\" {\n\t\t\tsetValues = append(setValues, \"name=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Name)\n\t\t}\n\t\tif doctor.DoctorDetails.DOB != \"\" {\n\t\t\tsetValues = append(setValues, \"dob=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.DOB)\n\t\t}\n\t\tif doctor.DoctorDetails.Age != \"\" {\n\t\t\tsetValues = append(setValues, \"age=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Age)\n\t\t}\n\t\tif doctor.DoctorDetails.Block != \"\" {\n\t\t\tsetValues = append(setValues, \"block=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Block)\n\t\t}\n\t\tif doctor.DoctorDetails.State != \"\" {\n\t\t\tsetValues = append(setValues, \"state=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.State)\n\t\t}\n\t\tif doctor.DoctorDetails.District != \"\" {\n\t\t\tsetValues = append(setValues, \"district=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.District)\n\t\t}\n\t\tif doctor.DoctorDetails.Pincode != \"\" {\n\t\t\tsetValues = append(setValues, \"pincode=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Pincode)\n\t\t}\n\t\tif doctor.DoctorDetails.Gender != \"\" {\n\t\t\tsetValues = append(setValues, \"gender=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.Gender)\n\t\t}\n\t\tif doctor.DoctorDetails.LicenseNumber != \"\" {\n\t\t\tsetValues = append(setValues, \"license_number=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorDetails.LicenseNumber)\n\t\t}\n\t}\n\n\tif doctor.DoctorContact != nil {\n\t\tif doctor.DoctorContact.Email != \"\" {\n\t\t\tsetValues = append(setValues, \"email=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorContact.Email)\n\t\t}\n\t\tif doctor.DoctorContact.Phone != \"\" {\n\t\t\tsetValues = append(setValues, \"phone=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, doctor.DoctorContact.Phone)\n\t\t}\n\t}\n\n\tif doctor.Department != \"\" {\n\t\tsetValues = append(setValues, \"department=$\"+strconv.Itoa(len(params)+1))\n\t\tparams = append(params, doctor.Department)\n\t}\n\n\tif doctor.Designation != \"\" {\n\t\tsetValues = append(setValues, \"designation=$\"+strconv.Itoa(len(params)+1))\n\t\tparams = append(params, doctor.Designation)\n\t}\n\n\tsetValues = append(setValues, \"updated_at=$\"+strconv.Itoa(len(params)+1))\n\tparams = append(params, time.Now())\n\n\tsetClause := strings.Join(setValues, \", \")\n\treturn setClause, params\n}"
+        },
+        {
+          "name": "getFilterParams",
+          "parameters": [
+            {
+              "name": "filter",
+              "type": "&{%!s(token.Pos=9209) %!s(*ast.SelectorExpr=&{0x14000143040 0x14000143060})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tif filter.Name != \"\" {\n\t\tquery += \"name LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Name+\"%\")\n\t}\n\tif filter.LicenseNumber != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"license_number LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.LicenseNumber+\"%\")\n\t}\n\tif filter.Email != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"email LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Email+\"%\")\n\t}\n\tif filter.Phone != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"phone LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Phone+\"%\")\n\t}\n\treturn query, params\n}"
+        }
+      ]
+    }
+  },
+  "internal/stores/patient/store.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/stores/patient/store.go": {
+      "imports": [
+        "\"database/sql\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"gofr.dev/pkg/errors\"",
+        "\"gofr.dev/pkg/gofr\"",
+        "\"strconv\"",
+        "\"time\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": null,
+          "returnType": "&{%!s(token.Pos=225) storeHandler}",
+          "body": "{\n\treturn &storeHandler{}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=299) %!s(*ast.SelectorExpr=&{0x14000010300 0x14000010320})}"
+            },
+            {
+              "name": "patientReq",
+              "type": "&{%!s(token.Pos=325) %!s(*ast.SelectorExpr=&{0x14000010360 0x14000010380})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=343) %!s(*ast.SelectorExpr=&{0x140000103a0 0x140000103c0})}",
+          "body": "{\n\tvar patient models.Patient\n\tquery := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,block, district, pincode, created_at, updated_at, deleted_at FROM patients `\n\n\t// Append the WHERE clause for other conditions\n\twhereClause, params := getWhereClause(patientReq)\n\tif whereClause != \"\" {\n\t\tquery += \"WHERE \" + whereClause\n\t}\n\n\tpatient.PatientContact = &models.PatientContact{}\n\tpatient.PatientDetails = &models.PatientPersonalDetails{}\n\tpatient.Address = &models.Address{}\n\n\trow := ctx.DB().QueryRow(query, params...)\n\terr := row.Scan(\n\t\t&patient.ID,\n\t\t&patient.PatientContact.Email,\n\t\t&patient.PatientContact.Phone,\n\t\t&patient.PatientDetails.Name,\n\t\t&patient.PatientDetails.DOB,\n\t\t&patient.PatientDetails.Age,\n\t\t&patient.PatientDetails.Gender,\n\t\t&patient.PatientDetails.Relation,\n\t\t&patient.PatientDetails.AadharNumber,\n\t\t&patient.Address.Block,\n\t\t&patient.Address.District,\n\t\t&patient.Address.Pincode,\n\t\t&patient.CreatedAt,\n\t\t&patient.UpdatedAt,\n\t\t&patient.DeletedAt,\n\t)\n\n\tif err == sql.ErrNoRows || patient.DeletedAt != nil {\n\t\treturn nil, &errors.EntityNotFound{\n\t\t\tEntity: \"patient\",\n\t\t\tID:     patientReq.ID,\n\t\t}\n\t}\n\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while fetching patient details from db:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn &patient, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1708) %!s(*ast.SelectorExpr=&{0x140000115e0 0x14000011600})}"
+            },
+            {
+              "name": "doctorFilter",
+              "type": "&{%!s(token.Pos=1736) %!s(*ast.SelectorExpr=&{0x14000011640 0x14000011660})}"
+            },
+            {
+              "name": "pageFilter",
+              "type": "&{%!s(token.Pos=1770) %!s(*ast.SelectorExpr=&{0x140000116a0 0x140000116c0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1785) <nil> %!s(*ast.StarExpr=&{1787 0x1400000c660})}",
+          "body": "{\n\tvar patients []*models.Patient\n\tquery := `SELECT id, email, phone, name, dob, age,gender,relation_name,aadhar_number,block, district, pincode, created_at, updated_at, deleted_at FROM patients `\n\n\t// Append the WHERE clause for other conditions\n\twhereClause, params := getFilterParams(doctorFilter)\n\tif whereClause != \"\" {\n\t\tquery += \"WHERE \" + whereClause\n\t}\n\n\tquery += \" LIMIT \" + pageFilter.Limit\n\n\tquery += \" OFFSET \" + pageFilter.Offset\n\n\trows, err := ctx.DB().Query(query, params...)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tdefer rows.Close()\n\n\tfor rows.Next() {\n\t\tvar patient models.Patient\n\t\tpatient.PatientContact = &models.PatientContact{}\n\t\tpatient.PatientDetails = &models.PatientPersonalDetails{}\n\t\tpatient.Address = &models.Address{}\n\n\t\terr = rows.Scan(\n\t\t\t&patient.ID,\n\t\t\t&patient.PatientContact.Email,\n\t\t\t&patient.PatientContact.Phone,\n\t\t\t&patient.PatientDetails.Name,\n\t\t\t&patient.PatientDetails.DOB,\n\t\t\t&patient.PatientDetails.Age,\n\t\t\t&patient.PatientDetails.Gender,\n\t\t\t&patient.PatientDetails.Relation,\n\t\t\t&patient.PatientDetails.AadharNumber,\n\t\t\t&patient.Address.Block,\n\t\t\t&patient.Address.District,\n\t\t\t&patient.Address.Pincode,\n\t\t\t&patient.CreatedAt,\n\t\t\t&patient.UpdatedAt,\n\t\t\t&patient.DeletedAt,\n\t\t)\n\t\tif err != nil {\n\t\t\tctx.Logger.Error(\"error while scanning doctor details:\", err)\n\t\t\treturn nil, &errors.DB{Err: err}\n\t\t}\n\n\t\tpatients = append(patients, &patient)\n\t}\n\n\tif err = rows.Err(); err != nil {\n\t\tctx.Logger.Error(\"error while iterating over doctor rows:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn patients, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=3402) %!s(*ast.SelectorExpr=&{0x1400012cda0 0x1400012cdc0})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=3425) %!s(*ast.SelectorExpr=&{0x1400012ce00 0x1400012ce20})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=3443) %!s(*ast.SelectorExpr=&{0x1400012ce40 0x1400012ce60})}",
+          "body": "{\n\tcolumns, placeholders, params := getInsertColumnsAndPlaceholders(patient)\n\tquery := \"INSERT INTO patients \" + columns + \" VALUES \" + placeholders + \" RETURNING id\"\n\n\tvar id string\n\terr := ctx.DB().QueryRow(query, params...).Scan(&id)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while creating patient in the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\tpatient.ID = id\n\treturn patient, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=3907) %!s(*ast.SelectorExpr=&{0x1400012d560 0x1400012d580})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=3930) %!s(*ast.SelectorExpr=&{0x1400012d5c0 0x1400012d5e0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=3948) %!s(*ast.SelectorExpr=&{0x1400012d600 0x1400012d620})}",
+          "body": "{\n\tsetClause, params := getUpdateSetClause(patient)\n\tquery := \"UPDATE patients SET \" + setClause + \" WHERE id = $\" + strconv.Itoa(len(params)+1)\n\tparams = append(params, patient.ID)\n\n\t_, err := ctx.DB().Exec(query, params...)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while updating patient in the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\treturn patient, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4384) %!s(*ast.SelectorExpr=&{0x1400012dd60 0x1400012dd80})}"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "returnType": "error",
+          "body": "{\n\tquery := `UPDATE patients  SET deleted_at=$1 WHERE id=$2`\n\t_, err := ctx.DB().Exec(query, time.Now(), id)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while deleting patient from the database:\", err)\n\t\treturn &errors.DB{Err: err}\n\t}\n\treturn nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4704) %!s(*ast.SelectorExpr=&{0x14000132300 0x14000132320})}"
+            },
+            {
+              "name": "patientID",
+              "type": "string"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4738) <nil> %!s(*ast.StarExpr=&{4740 0x1400000d020})}",
+          "body": "{\n\tquery := ` SELECT id, date, time, followup_count FROM patient_followups  WHERE patient_id=$1`\n\trows, err := ctx.DB().Query(query, patientID)\n\tif err != nil {\n\t\tctx.Logger.Error(\"error while fetching follow-ups from the database:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\tdefer rows.Close()\n\n\tfollowUps := []*models.FollowUp{}\n\tfor rows.Next() {\n\t\tvar followUp models.FollowUp\n\t\terr := rows.Scan(&followUp.ID, &followUp.Date, &followUp.Time, &followUp.FollowUpCount)\n\t\tif err != nil {\n\t\t\tctx.Logger.Error(\"error while scanning follow-up row:\", err)\n\t\t\treturn nil, &errors.DB{Err: err}\n\t\t}\n\t\tfollowUps = append(followUps, &followUp)\n\t}\n\n\tif err := rows.Err(); err != nil {\n\t\tctx.Logger.Error(\"error while iterating follow-up rows:\", err)\n\t\treturn nil, &errors.DB{Err: err}\n\t}\n\n\treturn followUps, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/stores/patient/functions.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/stores/patient/functions.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"strconv\"",
+        "\"strings\"",
+        "\"time\""
+      ],
+      "functions": [
+        {
+          "name": "getWhereClause",
+          "parameters": [
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=163) %!s(*ast.SelectorExpr=&{0x140000b6140 0x140000b6160})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tquery  string\n\t\tparams []interface{}\n\t\ti      int\n\t)\n\n\ti = 0\n\n\tif patient.PatientDetails != nil {\n\t\tif patient.PatientDetails.Name != \"\" {\n\t\t\tif i > 0 {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"name=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientDetails.Name)\n\t\t\ti++\n\t\t}\n\t\tif patient.PatientDetails.DOB != \"\" {\n\t\t\tif i > 0 {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"dob=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientDetails.DOB)\n\t\t\ti++\n\t\t}\n\t\tif patient.PatientDetails.Age != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"age=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientDetails.Age)\n\t\t\ti++\n\t\t}\n\t\tif patient.PatientDetails.Gender != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"gender=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientDetails.Gender)\n\t\t\ti++\n\t\t}\n\t\tif patient.PatientDetails.AadharNumber != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"aadhar_number=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientDetails.AadharNumber)\n\t\t\ti++\n\t\t}\n\t}\n\n\tif patient.Address != nil {\n\t\tif patient.Address.Block != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"block=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.Address.Block)\n\t\t\ti++\n\t\t}\n\n\t\tif patient.Address.State != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"state=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.Address.State)\n\t\t\ti++\n\t\t}\n\t\tif patient.Address.District != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"district=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.Address.District)\n\t\t\ti++\n\t\t}\n\t\tif patient.Address.Pincode != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"pincode=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.Address.Pincode)\n\t\t\ti++\n\t\t}\n\t}\n\n\tif patient.PatientContact != nil {\n\t\tif patient.PatientContact.Email != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"email=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientContact.Email)\n\t\t\ti++\n\t\t}\n\t\tif patient.PatientContact.Phone != \"\" {\n\t\t\tif query != \"\" {\n\t\t\t\tquery += \" AND \"\n\t\t\t}\n\t\t\tquery += \"phone=$\" + strconv.Itoa(i+1)\n\t\t\tparams = append(params, patient.PatientContact.Phone)\n\t\t\ti++\n\t\t}\n\t}\n\n\tif patient.ID != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"id=$\" + strconv.Itoa(i+1)\n\t\tparams = append(params, patient.ID)\n\t\ti++\n\t}\n\n\treturn strings.Trim(query, \" AND \"), params\n}"
+        },
+        {
+          "name": "getInsertColumnsAndPlaceholders",
+          "parameters": [
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=2771) %!s(*ast.SelectorExpr=&{0x140000e4a00 0x140000e4a20})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tcolumns      []string\n\t\tplaceholders []string\n\t\tparams       []interface{}\n\t)\n\n\tif patient.PatientDetails != nil {\n\t\tif patient.PatientDetails.Name != \"\" {\n\t\t\tcolumns = append(columns, \"name\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Name)\n\t\t}\n\t\tif patient.PatientDetails.DOB != \"\" {\n\t\t\tcolumns = append(columns, \"dob\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.DOB)\n\t\t}\n\t\tif patient.PatientDetails.Age != \"\" {\n\t\t\tcolumns = append(columns, \"age\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Age)\n\t\t}\n\t\tif patient.PatientDetails.Gender != \"\" {\n\t\t\tcolumns = append(columns, \"gender\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Gender)\n\t\t}\n\t\tif patient.PatientDetails.AadharNumber != \"\" {\n\t\t\tcolumns = append(columns, \"aadhar_number\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.AadharNumber)\n\t\t}\n\t\tif patient.PatientDetails.Relation != \"\" {\n\t\t\tcolumns = append(columns, \"relation_name\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Relation)\n\t\t}\n\t}\n\n\tif patient.Address != nil {\n\t\tif patient.Address.Block != \"\" {\n\t\t\tcolumns = append(columns, \"block\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.Address.Block)\n\t\t}\n\t\tif patient.Address.State != \"\" {\n\t\t\tcolumns = append(columns, \"state\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.Address.State)\n\t\t}\n\t\tif patient.Address.District != \"\" {\n\t\t\tcolumns = append(columns, \"district\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.Address.District)\n\t\t}\n\t\tif patient.Address.Pincode != \"\" {\n\t\t\tcolumns = append(columns, \"pincode\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.Address.Pincode)\n\t\t}\n\t}\n\n\tif patient.PatientContact != nil {\n\t\tif patient.PatientContact.Email != \"\" {\n\t\t\tcolumns = append(columns, \"email\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientContact.Email)\n\t\t}\n\n\t\tif patient.PatientContact.Phone != \"\" {\n\t\t\tcolumns = append(columns, \"phone\")\n\t\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\t\tparams = append(params, patient.PatientContact.Phone)\n\t\t}\n\t}\n\n\tif patient.ID != \"\" {\n\t\tcolumns = append(columns, \"id\")\n\t\tplaceholders = append(placeholders, \"$\"+strconv.Itoa(len(placeholders)+1))\n\t\tparams = append(params, patient.ID)\n\t}\n\n\treturn \"(\" + strings.Join(columns, \", \") + \")\", \"(\" + strings.Join(placeholders, \", \") + \")\", params\n}"
+        },
+        {
+          "name": "getUpdateSetClause",
+          "parameters": [
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=5948) %!s(*ast.SelectorExpr=&{0x140000ebba0 0x140000ebbc0})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tvar (\n\t\tsetValues []string\n\t\tparams    []interface{}\n\t)\n\n\tif patient.PatientDetails != nil {\n\t\tif patient.PatientDetails.Name != \"\" {\n\t\t\tsetValues = append(setValues, \"name=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Name)\n\t\t}\n\t\tif patient.PatientDetails.DOB != \"\" {\n\t\t\tsetValues = append(setValues, \"dob=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.DOB)\n\t\t}\n\t\tif patient.PatientDetails.Age != \"\" {\n\t\t\tsetValues = append(setValues, \"age=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Age)\n\t\t}\n\t\tif patient.PatientDetails.Gender != \"\" {\n\t\t\tsetValues = append(setValues, \"gender=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Gender)\n\t\t}\n\t\tif patient.PatientDetails.AadharNumber != \"\" {\n\t\t\tsetValues = append(setValues, \"aadhar_number=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.AadharNumber)\n\t\t}\n\t\tif patient.PatientDetails.Relation != \"\" {\n\t\t\tsetValues = append(setValues, \"relation_name=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientDetails.Relation)\n\t\t}\n\t}\n\n\tif patient.Address != nil {\n\t\tif patient.Address.Block != \"\" {\n\t\t\tsetValues = append(setValues, \"block=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.Address.Block)\n\t\t}\n\t\tif patient.Address.State != \"\" {\n\t\t\tsetValues = append(setValues, \"state=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.Address.State)\n\t\t}\n\t\tif patient.Address.District != \"\" {\n\t\t\tsetValues = append(setValues, \"district=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.Address.District)\n\t\t}\n\t\tif patient.Address.Pincode != \"\" {\n\t\t\tsetValues = append(setValues, \"pincode=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.Address.Pincode)\n\t\t}\n\t}\n\n\tif patient.PatientContact != nil {\n\t\tif patient.PatientContact.Email != \"\" {\n\t\t\tsetValues = append(setValues, \"email=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientContact.Email)\n\t\t}\n\t\tif patient.PatientContact.Phone != \"\" {\n\t\t\tsetValues = append(setValues, \"phone=$\"+strconv.Itoa(len(params)+1))\n\t\t\tparams = append(params, patient.PatientContact.Phone)\n\t\t}\n\t}\n\n\tsetValues = append(setValues, \"updated_at=$\"+strconv.Itoa(len(params)+1))\n\tparams = append(params, time.Now())\n\n\tsetClause := strings.Join(setValues, \", \")\n\treturn setClause, params\n}"
+        },
+        {
+          "name": "getFilterParams",
+          "parameters": [
+            {
+              "name": "filter",
+              "type": "&{%!s(token.Pos=8459) %!s(*ast.SelectorExpr=&{0x140000f63c0 0x140000f63e0})}"
+            }
+          ],
+          "returnType": "string",
+          "body": "{\n\tif filter.Name != \"\" {\n\t\tquery += \"name LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Name+\"%\")\n\t}\n\tif filter.AadharNumber != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"aadhar_number LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.AadharNumber+\"%\")\n\t}\n\tif filter.Email != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"email LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Email+\"%\")\n\t}\n\tif filter.Phone != \"\" {\n\t\tif query != \"\" {\n\t\t\tquery += \" AND \"\n\t\t}\n\t\tquery += \"phone LIKE $\" + strconv.Itoa(len(params)+1)\n\t\tparams = append(params, \"%\"+filter.Phone+\"%\")\n\t}\n\treturn query, params\n}"
+        }
+      ]
+    }
+  },
+  "internal/models/models.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/models/models.go": {
+      "imports": null,
+      "functions": null
+    }
+  },
+  "internal/models/patient.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/models/patient.go": {
+      "imports": [
+        "\"time\""
+      ],
+      "functions": null
+    }
+  },
+  "internal/models/filter.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/models/filter.go": {
+      "imports": null,
+      "functions": null
+    }
+  },
+  "internal/models/doctor.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/models/doctor.go": {
+      "imports": [
+        "\"time\""
+      ],
+      "functions": null
+    }
+  },
+  "internal/http/doctor/http.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/http/doctor/http.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/services\"",
+        "\"gofr.dev/pkg/gofr\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": [
+            {
+              "name": "svc",
+              "type": "&{services Doctor}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=282) handler}",
+          "body": "{\n\treturn &handler{service: svc}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=353) %!s(*ast.SelectorExpr=&{0x140000b6360 0x140000b6380})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=369) %!s(*ast.FieldList=&{378 [] 379}) %!s(bool=false)}",
+          "body": "{\n\tvar doctor models.Doctor\n\n\tparams := ctx.Request().URL.Query()\n\n\tdoctor.ID = ctx.PathParam(\"id\")\n\n\tdoctor.DoctorDetails.Name = params.Get(\"name\")\n\tdoctor.DoctorDetails.LicenseNumber = params.Get(\"license_number\")\n\tdoctor.DoctorContact.Phone = params.Get(\"phone\")\n\n\tresp, err := h.service.Get(ctx, &doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=787) %!s(*ast.SelectorExpr=&{0x140000b6ae0 0x140000b6b00})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=803) %!s(*ast.FieldList=&{812 [] 813}) %!s(bool=false)}",
+          "body": "{\n\tvar (\n\t\tdoctor models.DoctorFilter\n\t\tpage   models.Page\n\t)\n\n\tparams := ctx.Request().URL.Query()\n\n\tif params.Get(\"limit\") != \"\" {\n\t\tpage.Limit = params.Get(\"limit\")\n\t} else {\n\t\tpage.Limit = \"20\"\n\t}\n\n\tif params.Get(\"offset\") != \"\" {\n\t\tpage.Offset = params.Get(\"offset\")\n\t} else {\n\t\tpage.Offset = \"0\"\n\t}\n\n\tdoctor.Name = params.Get(\"name\")\n\tdoctor.LicenseNumber = params.Get(\"license_number\")\n\tdoctor.Phone = params.Get(\"phone\")\n\n\tresp, err := h.service.GetAll(ctx, &doctor, &page)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1394) %!s(*ast.SelectorExpr=&{0x140000b7520 0x140000b7540})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1410) %!s(*ast.FieldList=&{1419 [] 1420}) %!s(bool=false)}",
+          "body": "{\n\tvar doctor models.Doctor\n\n\tdoctor.ID = ctx.PathParam(\"id\")\n\n\terr := ctx.Bind(&doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.Create(ctx, &doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "InternalCreate",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1700) %!s(*ast.SelectorExpr=&{0x140000b7b20 0x140000b7b40})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1716) %!s(*ast.FieldList=&{1725 [] 1726}) %!s(bool=false)}",
+          "body": "{\n\tvar doctor models.Doctor\n\n\terr := ctx.Bind(&doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.InternalCreate(ctx, &doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1972) %!s(*ast.SelectorExpr=&{0x140000da100 0x140000da120})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1988) %!s(*ast.FieldList=&{1997 [] 1998}) %!s(bool=false)}",
+          "body": "{\n\tvar doctor models.Doctor\n\n\tdoctor.ID = ctx.PathParam(\"id\")\n\n\terr := ctx.Bind(&doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.Update(ctx, &doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=2270) %!s(*ast.SelectorExpr=&{0x140000da700 0x140000da720})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=2286) %!s(*ast.FieldList=&{2295 [] 2296}) %!s(bool=false)}",
+          "body": "{\n\terr := h.service.Delete(ctx, ctx.PathParam(\"id\"))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn nil, nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=2452) %!s(*ast.SelectorExpr=&{0x140000daa80 0x140000daaa0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=2468) %!s(*ast.FieldList=&{2477 [] 2478}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.service.GetFollowUp(ctx, ctx.PathParam(\"id\"))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/http/patient/http.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/http/patient/http.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/services\"",
+        "\"gofr.dev/pkg/gofr\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": [
+            {
+              "name": "svc",
+              "type": "&{services Patient}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=285) handler}",
+          "body": "{\n\treturn &handler{service: svc}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=356) %!s(*ast.SelectorExpr=&{0x140000103a0 0x140000103c0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=372) %!s(*ast.FieldList=&{381 [] 382}) %!s(bool=false)}",
+          "body": "{\n\tvar patient models.Patient\n\n\tpatient.ID = ctx.PathParam(\"id\")\n\n\tparams := ctx.Request().URL.Query()\n\n\tpatient.PatientDetails.Name = params.Get(\"name\")\n\tpatient.PatientDetails.AadharNumber = params.Get(\"aadhar_number\")\n\tpatient.PatientContact.Phone = params.Get(\"phone\")\n\n\tresp, err := h.service.Get(ctx, &patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=798) %!s(*ast.SelectorExpr=&{0x14000010b20 0x14000010b40})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=814) %!s(*ast.FieldList=&{823 [] 824}) %!s(bool=false)}",
+          "body": "{\n\tvar (\n\t\tpatient models.PatientFilter\n\t\tpage    models.Page\n\t)\n\n\tparams := ctx.Request().URL.Query()\n\n\tif params.Get(\"limit\") != \"\" {\n\t\tpage.Limit = params.Get(\"limit\")\n\t} else {\n\t\tpage.Limit = \"20\"\n\t}\n\n\tif params.Get(\"offset\") != \"\" {\n\t\tpage.Offset = params.Get(\"offset\")\n\t} else {\n\t\tpage.Offset = \"0\"\n\t}\n\n\tpatient.Name = params.Get(\"name\")\n\tpatient.AadharNumber = params.Get(\"aadhar_number\")\n\tpatient.Phone = params.Get(\"phone\")\n\n\tresp, err := h.service.GetAll(ctx, &patient, &page)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1410) %!s(*ast.SelectorExpr=&{0x14000011560 0x14000011580})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1426) %!s(*ast.FieldList=&{1435 [] 1436}) %!s(bool=false)}",
+          "body": "{\n\tvar patient models.Patient\n\n\tpatient.ID = ctx.PathParam(\"id\")\n\n\terr := ctx.Bind(&patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.Create(ctx, &patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "InternalCreate",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1721) %!s(*ast.SelectorExpr=&{0x14000011b60 0x14000011b80})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1737) %!s(*ast.FieldList=&{1746 [] 1747}) %!s(bool=false)}",
+          "body": "{\n\tvar patient models.Patient\n\n\terr := ctx.Bind(&patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.InternalCreate(ctx, &patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1997) %!s(*ast.SelectorExpr=&{0x14000126140 0x14000126160})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=2013) %!s(*ast.FieldList=&{2022 [] 2023}) %!s(bool=false)}",
+          "body": "{\n\tvar patient models.Patient\n\n\tpatient.ID = ctx.PathParam(\"id\")\n\n\terr := ctx.Bind(&patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.service.Update(ctx, &patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=2300) %!s(*ast.SelectorExpr=&{0x14000126740 0x14000126760})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=2316) %!s(*ast.FieldList=&{2325 [] 2326}) %!s(bool=false)}",
+          "body": "{\n\terr := h.service.Delete(ctx, ctx.PathParam(\"id\"))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn nil, nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=2482) %!s(*ast.SelectorExpr=&{0x14000126ac0 0x14000126ae0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=2498) %!s(*ast.FieldList=&{2507 [] 2508}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.service.GetFollowUp(ctx, ctx.PathParam(\"id\"))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/services/interfaces.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/services/interfaces.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"gofr.dev/pkg/gofr\""
+      ],
+      "functions": null
+    }
+  },
+  "internal/services/doctor/services.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/services/doctor/services.go": {
+      "imports": [
+        "\"bytes\"",
+        "\"encoding/json\"",
+        "\"fmt\"",
+        "\"github.com/pkg/errors\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/stores\"",
+        "\"gofr.dev/pkg/errors\"",
+        "\"gofr.dev/pkg/gofr\"",
+        "\"io/ioutil\"",
+        "\"net/http\"",
+        "\"strconv\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": [
+            {
+              "name": "store",
+              "type": "&{stores Doctor}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=408) serviceHandler}",
+          "body": "{\n\treturn &serviceHandler{store: store}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=500) %!s(*ast.SelectorExpr=&{0x140000104c0 0x140000104e0})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=522) %!s(*ast.SelectorExpr=&{0x14000010520 0x14000010540})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=539) %!s(*ast.FieldList=&{548 [] 549}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.Get(ctx, doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=696) %!s(*ast.SelectorExpr=&{0x140000108a0 0x140000108c0})}"
+            },
+            {
+              "name": "filter",
+              "type": "&{%!s(token.Pos=718) %!s(*ast.SelectorExpr=&{0x14000010900 0x14000010920})}"
+            },
+            {
+              "name": "pageFilter",
+              "type": "&{%!s(token.Pos=751) %!s(*ast.SelectorExpr=&{0x14000010960 0x14000010980})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=766) %!s(*ast.FieldList=&{775 [] 776}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.GetAll(ctx, filter, pageFilter)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn models.AllDataResponse{\n\t\tCount:  strconv.Itoa(len(resp)),\n\t\tOffset: pageFilter.Offset,\n\t\tLimit:  pageFilter.Limit,\n\t\tData:   resp,\n\t}, nil\n}"
+        },
+        {
+          "name": "InternalCreate",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1076) %!s(*ast.SelectorExpr=&{0x14000010f00 0x14000010f20})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=1098) %!s(*ast.SelectorExpr=&{0x14000010f60 0x14000010f80})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1115) %!s(*ast.FieldList=&{1124 [] 1125}) %!s(bool=false)}",
+          "body": "{\n\tvar entityNotFound *errors2.EntityNotFound\n\n\tmissingParams := validateCreateRequest(doctor)\n\tif len(missingParams) > 0 {\n\t\treturn nil, errors2.MissingParam{Param: missingParams}\n\t}\n\n\t// Prepare the request body\n\treg := models.Register{\n\t\tPhone:      doctor.DoctorContact.Phone,\n\t\tEmail:      doctor.DoctorContact.Email,\n\t\tPassword:   \"hello@AIMSS2024\",\n\t\tPermission: \"DOCTOR\",\n\t}\n\n\treqBytes, err := json.Marshal(reg)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error while marshalling: %w\", err)\n\t}\n\n\t// Create a new HTTP request\n\treq, err := http.NewRequestWithContext(ctx, http.MethodPost, ctx.Config.Get(\"AUTHENTICATION_API_ENDPOINT\"), bytes.NewBuffer(reqBytes))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error while creating request for auth-service: %w\", err)\n\t}\n\n\t// Perform the HTTP request\n\thttpClient := http.Client{}\n\tres, err := httpClient.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error sending request: %w\", err)\n\t}\n\tdefer res.Body.Close()\n\n\t// Read response body\n\tbody, err := ioutil.ReadAll(res.Body)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error reading response body: %w\", err)\n\t}\n\n\t// Check if the response status code is not 201 (Created)\n\tif res.StatusCode != http.StatusCreated {\n\t\tvar errBody struct {\n\t\t\tErrors []*errors2.Response `json:\"errors\"`\n\t\t}\n\t\terr = json.Unmarshal(body, &errBody)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"error unmarshalling error body: %w\", err)\n\t\t}\n\t\treturn nil, errBody.Errors[0]\n\t}\n\n\t// Unmarshal response data\n\tvar data models.Data\n\terr = json.Unmarshal(body, &data)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error unmarshalling response data: %w\", err)\n\t}\n\n\t// Check if the user already exists\n\tisExistingUser, err := h.store.Get(ctx, &models.Doctor{ID: strconv.Itoa(data.Data.User.ID)})\n\tif err != nil && !errors.As(err, &entityNotFound) {\n\t\treturn nil, fmt.Errorf(\"error checking if doctor exists: %w\", err)\n\t}\n\n\tif isExistingUser != nil {\n\t\treturn nil, &errors2.Response{StatusCode: http.StatusBadRequest, Code: http.StatusText(http.StatusBadRequest), Reason: \"doctor already exists\"}\n\t}\n\n\t// Set doctor ID\n\tdoctor.ID = strconv.Itoa(data.Data.User.ID)\n\n\t// Create the doctor\n\tresp, err := h.store.Create(ctx, doctor)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error creating doctor: %w\", err)\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=3467) %!s(*ast.SelectorExpr=&{0x1400012b080 0x1400012b0a0})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=3489) %!s(*ast.SelectorExpr=&{0x1400012b0e0 0x1400012b100})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=3506) %!s(*ast.FieldList=&{3515 [] 3516}) %!s(bool=false)}",
+          "body": "{\n\tvar entityNotFound *errors2.EntityNotFound\n\n\tisExistingUser, err := h.store.Get(ctx, &models.Doctor{ID: doctor.ID})\n\tif !errors.As(err, &entityNotFound) && err != nil {\n\t\treturn nil, err\n\t}\n\n\tif isExistingUser != nil {\n\t\treturn nil, &errors2.Response{StatusCode: http.StatusBadRequest, Code: http.StatusText(http.StatusBadRequest), Reason: \"doctor already exist\"}\n\t}\n\n\tresp, err := h.store.Create(ctx, doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4035) %!s(*ast.SelectorExpr=&{0x1400012ba80 0x1400012baa0})}"
+            },
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=4057) %!s(*ast.SelectorExpr=&{0x1400012bae0 0x1400012bb00})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4074) %!s(*ast.FieldList=&{4083 [] 4084}) %!s(bool=false)}",
+          "body": "{\n\t_, err := h.store.Get(ctx, &models.Doctor{ID: doctor.ID})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.store.Update(ctx, doctor)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4332) %!s(*ast.SelectorExpr=&{0x14000132160 0x14000132180})}"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "returnType": "error",
+          "body": "{\n\t_, err := h.store.Get(ctx, &models.Doctor{ID: id})\n\tif err != nil {\n\t\treturn err\n\t}\n\n\terr = h.store.Delete(ctx, id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\treturn nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4573) %!s(*ast.SelectorExpr=&{0x14000132680 0x140001326a0})}"
+            },
+            {
+              "name": "doctorID",
+              "type": "string"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4606) %!s(*ast.FieldList=&{4615 [] 4616}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.GetFollowUp(ctx, doctorID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/services/doctor/functions.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/services/doctor/functions.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\""
+      ],
+      "functions": [
+        {
+          "name": "validateCreateRequest",
+          "parameters": [
+            {
+              "name": "doctor",
+              "type": "&{%!s(token.Pos=138) %!s(*ast.SelectorExpr=&{0x140000100e0 0x14000010100})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=154) <nil> string}",
+          "body": "{\n\tvar params []string\n\n\tif doctor.DoctorDetails.Name == \"\" {\n\t\tparams = append(params, \"name\")\n\t}\n\n\tif doctor.DoctorDetails.LicenseNumber == \"\" {\n\t\tparams = append(params, \"license_number\")\n\t}\n\n\tif doctor.DoctorDetails.Gender == \"\" {\n\t\tparams = append(params, \"gender\")\n\t}\n\n\tif doctor.DoctorContact.Phone == \"\" {\n\t\tparams = append(params, \"phone\")\n\t}\n\n\tif doctor.DoctorContact.Email == \"\" {\n\t\tparams = append(params, \"email\")\n\t}\n\n\treturn params\n}"
+        }
+      ]
+    }
+  },
+  "internal/services/patient/services.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/services/patient/services.go": {
+      "imports": [
+        "\"bytes\"",
+        "\"encoding/json\"",
+        "\"errors\"",
+        "\"fmt\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\"",
+        "\"github.com/varun-singhh/backend/user-management-service/internal/stores\"",
+        "\"gofr.dev/pkg/errors\"",
+        "\"gofr.dev/pkg/gofr\"",
+        "\"io/ioutil\"",
+        "\"net/http\"",
+        "\"strconv\""
+      ],
+      "functions": [
+        {
+          "name": "New",
+          "parameters": [
+            {
+              "name": "store",
+              "type": "&{stores Patient}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=396) serviceHandler}",
+          "body": "{\n\treturn &serviceHandler{store: store}\n}"
+        },
+        {
+          "name": "Get",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=488) %!s(*ast.SelectorExpr=&{0x140000104c0 0x140000104e0})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=511) %!s(*ast.SelectorExpr=&{0x14000010520 0x14000010540})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=529) %!s(*ast.FieldList=&{538 [] 539}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.Get(ctx, patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "GetAll",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=687) %!s(*ast.SelectorExpr=&{0x140000108a0 0x140000108c0})}"
+            },
+            {
+              "name": "filter",
+              "type": "&{%!s(token.Pos=709) %!s(*ast.SelectorExpr=&{0x14000010900 0x14000010920})}"
+            },
+            {
+              "name": "pageFilter",
+              "type": "&{%!s(token.Pos=743) %!s(*ast.SelectorExpr=&{0x14000010960 0x14000010980})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=758) %!s(*ast.FieldList=&{767 [] 768}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.GetAll(ctx, filter, pageFilter)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn models.AllDataResponse{\n\t\tCount:  strconv.Itoa(len(resp)),\n\t\tOffset: pageFilter.Offset,\n\t\tLimit:  pageFilter.Limit,\n\t\tData:   resp,\n\t}, nil\n}"
+        },
+        {
+          "name": "Create",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1060) %!s(*ast.SelectorExpr=&{0x14000010f00 0x14000010f20})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=1083) %!s(*ast.SelectorExpr=&{0x14000010f60 0x14000010f80})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1101) %!s(*ast.FieldList=&{1110 [] 1111}) %!s(bool=false)}",
+          "body": "{\n\tvar entityNotFound *errors2.EntityNotFound\n\n\tisExistingUser, err := h.store.Get(ctx, &models.Patient{ID: patient.ID})\n\tif !errors.As(err, &entityNotFound) && err != nil {\n\t\treturn nil, err\n\t}\n\n\tif isExistingUser != nil {\n\t\treturn nil, &errors2.Response{StatusCode: http.StatusBadRequest, Code: http.StatusText(http.StatusBadRequest), Reason: \"patient already exist\"}\n\t}\n\n\tresp, err := h.store.Create(ctx, patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "InternalCreate",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=1642) %!s(*ast.SelectorExpr=&{0x14000011900 0x14000011920})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=1665) %!s(*ast.SelectorExpr=&{0x14000011960 0x14000011980})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=1683) %!s(*ast.FieldList=&{1692 [] 1693}) %!s(bool=false)}",
+          "body": "{\n\tvar entityNotFound *errors2.EntityNotFound\n\n\tmissingParams := validateCreateRequest(patient)\n\tif len(missingParams) > 0 {\n\t\treturn nil, errors2.MissingParam{Param: missingParams}\n\t}\n\n\t// Prepare the request body\n\treg := models.Register{\n\t\tPhone:      patient.PatientContact.Phone,\n\t\tEmail:      patient.PatientContact.Email,\n\t\tPassword:   \"welcome@2024\",\n\t\tPermission: \"PATIENT\",\n\t}\n\n\treqBytes, err := json.Marshal(reg)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error while marshalling: %w\", err)\n\t}\n\n\t// Create a new HTTP request\n\treq, err := http.NewRequestWithContext(ctx, http.MethodPost, ctx.Config.Get(\"AUTHENTICATION_API_ENDPOINT\"), bytes.NewBuffer(reqBytes))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error while creating request for auth-service: %w\", err)\n\t}\n\n\t// Perform the HTTP request\n\thttpClient := http.Client{}\n\tres, err := httpClient.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error sending request: %w\", err)\n\t}\n\tdefer res.Body.Close()\n\n\t// Read response body\n\tbody, err := ioutil.ReadAll(res.Body)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error reading response body: %w\", err)\n\t}\n\n\t// Check if the response status code is not 201 (Created)\n\tif res.StatusCode != http.StatusCreated {\n\t\tvar errBody struct {\n\t\t\tErrors []*errors2.Response `json:\"errors\"`\n\t\t}\n\t\terr = json.Unmarshal(body, &errBody)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"error unmarshalling error body: %w\", err)\n\t\t}\n\t\treturn nil, errBody.Errors[0]\n\t}\n\n\t// Unmarshal response data\n\tvar data models.Data\n\terr = json.Unmarshal(body, &data)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error unmarshalling response data: %w\", err)\n\t}\n\n\t// Check if the user already exists\n\tisExistingUser, err := h.store.Get(ctx, &models.Patient{ID: strconv.Itoa(data.Data.User.ID)})\n\tif err != nil && !errors.As(err, &entityNotFound) {\n\t\treturn nil, fmt.Errorf(\"error checking if doctor exists: %w\", err)\n\t}\n\n\tif isExistingUser != nil {\n\t\treturn nil, &errors2.Response{StatusCode: http.StatusBadRequest, Code: http.StatusText(http.StatusBadRequest), Reason: \"doctor already exists\"}\n\t}\n\n\t// Set doctor ID\n\tpatient.ID = strconv.Itoa(data.Data.User.ID)\n\n\t// Create the doctor\n\tresp, err := h.store.Create(ctx, patient)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error creating doctor: %w\", err)\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Update",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4041) %!s(*ast.SelectorExpr=&{0x1400012ba80 0x1400012baa0})}"
+            },
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=4064) %!s(*ast.SelectorExpr=&{0x1400012bae0 0x1400012bb00})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4082) %!s(*ast.FieldList=&{4091 [] 4092}) %!s(bool=false)}",
+          "body": "{\n\t_, err := h.store.Get(ctx, &models.Patient{ID: patient.ID})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tresp, err := h.store.Update(ctx, patient)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        },
+        {
+          "name": "Delete",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4343) %!s(*ast.SelectorExpr=&{0x14000132160 0x14000132180})}"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "returnType": "error",
+          "body": "{\n\t_, err := h.store.Get(ctx, &models.Patient{ID: id})\n\tif err != nil {\n\t\treturn err\n\t}\n\n\terr = h.store.Delete(ctx, id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\treturn nil\n}"
+        },
+        {
+          "name": "GetFollowUp",
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": "&{%!s(token.Pos=4585) %!s(*ast.SelectorExpr=&{0x14000132680 0x140001326a0})}"
+            },
+            {
+              "name": "patientID",
+              "type": "string"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=4619) %!s(*ast.FieldList=&{4628 [] 4629}) %!s(bool=false)}",
+          "body": "{\n\tresp, err := h.store.GetFollowUp(ctx, patientID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn resp, nil\n}"
+        }
+      ]
+    }
+  },
+  "internal/services/patient/functions.go": {
+    "/Users/varun/go/src/github.com/varun-singhh/backend/user-management-service/internal/services/patient/functions.go": {
+      "imports": [
+        "\"github.com/varun-singhh/backend/user-management-service/internal/models\""
+      ],
+      "functions": [
+        {
+          "name": "validateCreateRequest",
+          "parameters": [
+            {
+              "name": "patient",
+              "type": "&{%!s(token.Pos=140) %!s(*ast.SelectorExpr=&{0x140000b60a0 0x140000b60c0})}"
+            }
+          ],
+          "returnType": "&{%!s(token.Pos=157) <nil> string}",
+          "body": "{\n\tvar params []string\n\n\tif patient.PatientDetails.Name == \"\" {\n\t\tparams = append(params, \"name\")\n\t}\n\n\tif patient.PatientDetails.AadharNumber == \"\" {\n\t\tparams = append(params, \"aadhar_number\")\n\t}\n\n\tif patient.PatientDetails.Gender == \"\" {\n\t\tparams = append(params, \"gender\")\n\t}\n\n\tif patient.PatientContact.Phone == \"\" {\n\t\tparams = append(params, \"phone\")\n\t}\n\n\tif patient.PatientContact.Email == \"\" {\n\t\tparams = append(params, \"email\")\n\t}\n\n\treturn params\n}"
+        }
+      ]
+    }
+  }
+}
